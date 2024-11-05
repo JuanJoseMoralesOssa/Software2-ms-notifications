@@ -65,11 +65,12 @@ public class NotificacionesController : ControllerBase
         }
     }
 
+
     [Route("enviar-correo-2fa")]
     [HttpPost]
     public async Task<ActionResult> EnviarCorreo2fa(ModeloCorreo datos)
     {
-        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
+        var apiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
         var templateId = Environment.GetEnvironmentVariable("TwoFA_SENDGRID_TEMPLATE_ID");
         var client = new SendGridClient(apiKey);
 
@@ -77,8 +78,9 @@ public class NotificacionesController : ControllerBase
         msg.SetTemplateId(Environment.GetEnvironmentVariable("TwoFA_SENDGRID_TEMPLATE_ID"));
         msg.SetTemplateData(new
         {
-            name = datos.nombreDestino,
-            menssage = datos.contenidoCorreo
+            nombre = datos.nombreDestino,
+            mensaje = datos.contenidoCorreo,
+            asunto = datos.asuntoCorreo
         });
         var response = await client.SendEmailAsync(msg);
         if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
