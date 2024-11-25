@@ -70,7 +70,7 @@ public class NotificacionesController : ControllerBase
     [HttpPost]
     public async Task<ActionResult> EnviarCorreo2fa(ModeloCorreo datos)
     {
-        var apiKey = Environment.GetEnvironmentVariable("SENDGRID_API_KEY");
+        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
         var templateId = Environment.GetEnvironmentVariable("TwoFA_SENDGRID_TEMPLATE_ID");
         var client = new SendGridClient(apiKey);
 
@@ -78,9 +78,34 @@ public class NotificacionesController : ControllerBase
         msg.SetTemplateId(Environment.GetEnvironmentVariable("TwoFA_SENDGRID_TEMPLATE_ID"));
         msg.SetTemplateData(new
         {
-            nombre = datos.nombreDestino,
-            mensaje = datos.contenidoCorreo,
-            asunto = datos.asuntoCorreo
+            name = datos.nombreDestino,
+            message = datos.contenidoCorreo
+        });
+        var response = await client.SendEmailAsync(msg);
+        if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+        {
+            return Ok("Correo enviado a la dirección " + datos.correoDestino);
+        }
+        else
+        {
+            return BadRequest("Error enviando el mensaje a la dirección: " + datos.correoDestino);
+        }
+    }
+
+    [Route("enviar-certificado")]
+    [HttpPost]
+    public async Task<ActionResult> EnviarCertificado(ModeloCorreo datos)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
+        var templateId = Environment.GetEnvironmentVariable("CERTIFICATE_SENDGRID_TEMPLATE_ID");
+        var client = new SendGridClient(apiKey);
+
+        SendGridMessage msg = this.crearMensajeBase(datos);
+        msg.SetTemplateId(Environment.GetEnvironmentVariable("CERTIFICATE_SENDGRID_TEMPLATE_ID"));
+        msg.SetTemplateData(new
+        {
+            name = datos.nombreDestino,
+            message = datos.contenidoCorreo
         });
         var response = await client.SendEmailAsync(msg);
         if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
