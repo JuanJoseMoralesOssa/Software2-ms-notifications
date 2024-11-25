@@ -97,11 +97,11 @@ public class NotificacionesController : ControllerBase
     public async Task<ActionResult> EnviarCertificado(ModeloCorreo datos)
     {
         var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
-        var templateId = Environment.GetEnvironmentVariable("CERTIFICATE_SENDGRID_TEMPLATE_ID");
+        var templateId = Environment.GetEnvironmentVariable("CERTIFICADO_SENDGRID_TEMPLATE_ID");
         var client = new SendGridClient(apiKey);
 
         SendGridMessage msg = this.crearMensajeBase(datos);
-        msg.SetTemplateId(Environment.GetEnvironmentVariable("CERTIFICATE_SENDGRID_TEMPLATE_ID"));
+        msg.SetTemplateId(Environment.GetEnvironmentVariable("CERTIFICADO_SENDGRID_TEMPLATE_ID"));
         msg.SetTemplateData(new
         {
             name = datos.nombreDestino,
