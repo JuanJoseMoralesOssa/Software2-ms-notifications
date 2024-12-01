@@ -118,6 +118,33 @@ public class NotificacionesController : ControllerBase
         }
     }
 
+    [Route("update-evento")]
+    [HttpPost]
+    public async Task<ActionResult> EnviarUpdateEvento(ModeloCorreo datos)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
+        var templateId = Environment.GetEnvironmentVariable("UPDATEEVENT_SENDGRID_TEMPLATE_ID");
+        var client = new SendGridClient(apiKey);
+
+        SendGridMessage msg = this.crearMensajeBase(datos);
+        msg.SetTemplateId(Environment.GetEnvironmentVariable("UPDATEEVENT_SENDGRID_TEMPLATE_ID"));
+        msg.SetTemplateData(new
+        {
+            name = datos.nombreDestino,
+            message = datos.contenidoCorreo,
+            subject = datos.asuntoCorreo
+        });
+        var response = await client.SendEmailAsync(msg);
+        if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+        {
+            return Ok("Correo enviado a la dirección " + datos.correoDestino);
+        }
+        else
+        {
+            return BadRequest("Error enviando el mensaje a la dirección: " + datos.correoDestino);
+        }
+    }
+
     [Route("hash-validacion-usuario")]
     [HttpPost]
     public async Task<ActionResult> EnviarHashValidacionUsuario(ModeloCorreo datos)
