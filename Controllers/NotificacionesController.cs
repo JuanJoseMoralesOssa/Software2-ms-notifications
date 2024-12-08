@@ -145,6 +145,37 @@ public class NotificacionesController : ControllerBase
         }
     }
 
+    [Route("enviar-QR")]
+    [HttpPost]
+    public async Task<ActionResult> EnviarQR(ModeloCorreo datos)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
+        var templateId = Environment.GetEnvironmentVariable("QR_SENDGRID_TEMPLATE_ID");
+        var client = new SendGridClient(apiKey);
+
+        SendGridMessage msg = this.crearMensajeBase(datos);
+        msg.SetTemplateId(Environment.GetEnvironmentVariable("QR_SENDGRID_TEMPLATE_ID"));
+        Console.WriteLine(datos.nombreDestino);
+        Console.WriteLine(datos.contenidoCorreo);
+        string htmlContent = $@"<img alt=QR src='{datos.contenidoCorreo}'/>";
+        msg.HtmlContent = htmlContent;
+        msg.SetTemplateData(new
+        {
+            name = datos.nombreDestino,
+            message = datos.contenidoCorreo,
+            subject = datos.asuntoCorreo
+        });
+        var response = await client.SendEmailAsync(msg);
+        if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+        {
+            return Ok("Correo enviado a la dirección " + datos.correoDestino);
+        }
+        else
+        {
+            return BadRequest("Error enviando el mensaje a la dirección: " + datos.correoDestino);
+        }
+    }
+
     [Route("hash-validacion-usuario")]
     [HttpPost]
     public async Task<ActionResult> EnviarHashValidacionUsuario(ModeloCorreo datos)
