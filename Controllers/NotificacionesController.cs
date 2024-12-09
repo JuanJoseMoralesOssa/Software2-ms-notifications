@@ -1,8 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SendGrid;
 using SendGrid.Helpers.Mail;
-using System;
-using System.Threading.Tasks;
+using QRCoder;
 using ms_notificaciones.Models;
 
 
@@ -157,8 +156,9 @@ public class NotificacionesController : ControllerBase
         msg.SetTemplateId(Environment.GetEnvironmentVariable("QR_SENDGRID_TEMPLATE_ID"));
         Console.WriteLine(datos.nombreDestino);
         Console.WriteLine(datos.contenidoCorreo);
-        string htmlContent = $@"<img alt=QR src='{datos.contenidoCorreo}'/>";
-        msg.HtmlContent = htmlContent;
+        // Adjuntar la imagen del código QR
+        var qrImage = GenerarQR(datos.contenidoCorreo); // Genera el QR desde una URL o texto
+        msg.AddAttachment("codigoQR.png", Convert.ToBase64String(qrImage));
         msg.SetTemplateData(new
         {
             name = datos.nombreDestino,
@@ -220,4 +220,16 @@ public class NotificacionesController : ControllerBase
         var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
         return msg;
     }
+    // Método para generar el código QR
+private byte[] GenerarQR(string contenido)
+{
+    using (var generator = new QRCodeGenerator())
+    {
+        var qrCodeData = generator.CreateQrCode(contenido, QRCodeGenerator.ECCLevel.Q);
+        using (var qrCode = new PngByteQRCode(qrCodeData))
+        {
+            return qrCode.GetGraphic(20); // Retorna la imagen como un array de bytes
+        }
+    }
+}
 }
