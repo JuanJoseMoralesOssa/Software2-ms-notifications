@@ -11,32 +11,29 @@ public class NotificacionesController : ControllerBase
 {
     [Route("correo_bienvenida")]
     [HttpPost]
-   public async Task<IActionResult> EnviarCorreoBienvenida(ModeloCorreo datos)
-   {
-            var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
-            var client = new SendGridClient(apiKey);
-            var from = new EmailAddress(Environment.GetEnvironmentVariable("EMAIL_FROM"),Environment.GetEnvironmentVariable("NAME_FROM"));
-            var subject = datos.asuntoCorreo;
-            var to = new EmailAddress(datos.correoDestino, datos.nombreDestino);
-            var plainTextContent = "plain text content";
-            var htmlContent = datos.contenidoCorreo;
-            var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
-            msg.SetTemplateId(Environment.GetEnvironmentVariable("WELCOME_SENGRID_TEMPLATE"));
-            msg.SetTemplateData(new{
-                name=datos.nombreDestino
-            });
-            var response = await client.SendEmailAsync(msg);
-            
-            if(response.StatusCode == System.Net.HttpStatusCode.Accepted)
-            {
-                return Ok("Correo enviado correctamente " + datos.correoDestino);
-            }
-            else
-            {
-                var responseBody = await response.Body.ReadAsStringAsync();
-                return BadRequest($"No se pudo enviar el correo a la dirección: {datos.correoDestino}. Código de estado: {response.StatusCode}. Error: {responseBody}");
-            }
-   }
+    public async Task<ActionResult> EnviarCorreoBienvenida(ModeloCorreo datos)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
+        var templateId = Environment.GetEnvironmentVariable("WELCOME_SENGRID_TEMPLATE");
+        var client = new SendGridClient(apiKey);
+
+        SendGridMessage msg = this.crearMensajeBase(datos);
+        msg.SetTemplateId(Environment.GetEnvironmentVariable("WELCOME_SENGRID_TEMPLATE"));
+        msg.SetTemplateData(new
+        {
+            name = datos.nombreDestino,
+            message = datos.contenidoCorreo
+        });
+        var response = await client.SendEmailAsync(msg);
+        if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+        {
+            return Ok("Correo enviado a la dirección " + datos.correoDestino);
+        }
+        else
+        {
+            return BadRequest("Error enviando el mensaje a la dirección: " + datos.correoDestino);
+        }
+    }
     [Route("correo-recuperacion-clave")]
     [HttpPost]
     public async Task<ActionResult> EnviarCorreoRecuperacionClave(ModeloCorreo datos)
@@ -157,6 +154,10 @@ public class NotificacionesController : ControllerBase
         Console.WriteLine(datos.nombreDestino);
         Console.WriteLine(datos.contenidoCorreo);
         // Adjuntar la imagen del código QR
+        if (string.IsNullOrEmpty(datos.contenidoCorreo))
+        {
+            return BadRequest("El contenido del correo no puede estar vacío.");
+        }
         var qrImage = GenerarQR(datos.contenidoCorreo); // Genera el QR desde una URL o texto
         msg.AddAttachment("codigoQR.png", Convert.ToBase64String(qrImage));
         msg.SetTemplateData(new
@@ -219,6 +220,33 @@ public class NotificacionesController : ControllerBase
         var htmlContent = datos.contenidoCorreo;
         var msg = MailHelper.CreateSingleEmail(from, to, subject, plainTextContent, htmlContent);
         return msg;
+    }
+
+    [Route("cambio-contrasena")]
+    [HttpPost]
+    public async Task<ActionResult> EnviarCambioContrasena(ModeloCorreo datos)
+    {
+        var apiKey = Environment.GetEnvironmentVariable("SENGRID_API_KEY");
+        var templateId = Environment.GetEnvironmentVariable("CAMBIOCONTRASENA_SENDGRID_TEMPLATE_ID");
+        var client = new SendGridClient(apiKey);
+
+        SendGridMessage msg = this.crearMensajeBase(datos);
+        msg.SetTemplateId(Environment.GetEnvironmentVariable("CAMBIOCONTRASENA_SENDGRID_TEMPLATE_ID"));
+        msg.SetTemplateData(new
+        {
+            name = datos.nombreDestino,
+            message = datos.contenidoCorreo,
+            subject = datos.asuntoCorreo
+        });
+        var response = await client.SendEmailAsync(msg);
+        if (response.StatusCode == System.Net.HttpStatusCode.Accepted)
+        {
+            return Ok("Correo enviado a la dirección " + datos.correoDestino);
+        }
+        else
+        {
+            return BadRequest("Error enviando el mensaje a la dirección: " + datos.correoDestino);
+        }
     }
     // Método para generar el código QR
 private byte[] GenerarQR(string contenido)
